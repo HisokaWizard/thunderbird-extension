@@ -1,0 +1,52 @@
+{
+  "manifest_version": 2,
+  "name": "Thunderbird DID Controller",
+  "version": "1.0",
+  "description": "Controller to help using mail with DID platform",
+  "icons": {
+    "32": "icons/icon-32.png",
+    "64": "icons/icon-64.png"
+  },
+  "applications": {
+    "gecko": {
+      "id": "test@example.com",
+      "strict_min_version": "78.0"
+    }
+  },
+  "permissions": [
+    "compose",
+    "messagesRead",
+    "accountsRead",
+    "storage",
+    "tabs",
+    "activeTab",
+    "clipboardWrite",
+    "http://localhost:13999/*",
+    "https://dev-stand-host.com/*"
+  ],
+  "browser_action": {
+    "default_icon": "icons/icon-48.png",
+    "default_title": "DID Mail",
+    "default_popup": "index.html"
+  },
+  "background": {
+    "scripts": [
+      "service-worker.js"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "about:message*"
+      ],
+      "js": [
+        "content-script.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    "assets/*.png"
+  ],
+  "content_security_policy": "script-src 'self' 'unsafe-eval' http://localhost:13999; object-src 'self'"
+}
