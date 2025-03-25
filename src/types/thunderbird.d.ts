@@ -1,16 +1,24 @@
-declare const browser: any;
-
-declare namespace browser.messages {
-  function getFull(messageId: string): Promise<Message>;
-  function listMessages(folder: any): Promise<Message[]>;
-}
-
-declare namespace browser.compose {
-  function setBody(messageId: string, body: string): Promise<void>;
-}
-
-interface Message {
+interface ThunderbirdMessage {
   id: string;
   subject: string;
   body: string;
 }
+
+interface Browser {
+  runtime: {
+    sendMessage: (message: any) => Promise<any>;
+    onMessage: {
+      addListener: (callback: (request: any) => void) => void;
+    };
+  };
+  messages: {
+    listMessages: (options: { folder: any }) => Promise<ThunderbirdMessage[]>;
+    getFull: (messageId: string) => Promise<ThunderbirdMessage>;
+    inboxFolder: any;
+  };
+  compose: {
+    setBody: (messageId: string, content: string) => Promise<void>;
+  };
+}
+
+declare const browser: Browser;

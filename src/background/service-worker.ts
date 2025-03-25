@@ -7,7 +7,7 @@ async function handleGetEmail(messageId: string) {
       body: message.body,
     };
   } catch (error) {
-    console.error("Error getting email:", error);
+    console.error('Error getting email:', error);
   }
 }
 
@@ -15,9 +15,9 @@ async function handleGetEmail(messageId: string) {
 async function handleUpdateEmail(messageId: string, content: string) {
   try {
     await browser?.compose?.setBody(messageId, content);
-    console.log("Email content updated successfully");
+    console.log('Email content updated successfully');
   } catch (error) {
-    console.error("Error updating email:", error);
+    console.error('Error updating email:', error);
   }
 }
 
@@ -26,10 +26,10 @@ const runReactEventListeners = () => {
   // Обработчик сообщений от React-приложения
   browser?.runtime?.onMessage?.addListener((request, sender, sendResponse) => {
     switch (request.action) {
-      case "GET_EMAIL_CONTENT":
+      case 'GET_EMAIL_CONTENT':
         handleGetEmail(request.messageId);
         break;
-      case "UPDATE_EMAIL_CONTENT":
+      case 'UPDATE_EMAIL_CONTENT':
         handleUpdateEmail(request.messageId, request.content);
         break;
     }
