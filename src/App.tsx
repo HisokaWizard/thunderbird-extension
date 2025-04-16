@@ -1,83 +1,96 @@
-import React, { useEffect, useState } from 'react';
+import React, { CSSProperties, useEffect, useState } from 'react';
+
+// Объявляем глобальный объект browser для TypeScript
+declare const browser: any;
+
+const generalContainer: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  padding: '20px',
+  fontFamily: 'Arial, sans-serif',
+};
+
+function printDeepObject(obj: object) {
+  console.dir(obj, {
+    depth: null,
+    colors: true,
+    showHidden: true,
+  });
+}
 
 const App = () => {
-  const [emailContent, setEmailContent] = useState('');
-  const [currentMessageId, setCurrentMessageId] = useState('');
-  const [isExtensionContext, setIsExtensionContext] = useState(false);
+  const [editedContent, setEditedContent] = useState<string>('');
 
-  // Проверяем контекст выполнения
-  useEffect(() => {
-    setIsExtensionContext(typeof browser !== 'undefined' && typeof browser.runtime !== 'undefined');
+  const onOpenPanel = () => {
+    browser.runtime.sendMessage({
+      type: 'OPEN_SIDEBAR',
+      data: { status: 'success' },
+    });
+  };
 
-    if (typeof browser === 'undefined' || !browser.messages) return;
-
-    const init = async () => {
-      try {
-        const messages = await browser.messages.listMessages({
-          folder: browser.messages.inboxFolder,
-        });
-        setCurrentMessageId(messages[0]?.id || '');
-      } catch (error) {
-        console.error('Failed to init:', error);
-      }
-    };
-
-    init();
-  }, []);
+  const getMessageComposeTab = async (): Promise<any> => {
+    const tabs: any[] = await browser.tabs.query();
+    const messageComposeTab = tabs.find((it) => it.type === 'messageCompose');
+    return messageComposeTab;
+  };
 
   const fetchEmailContent = async () => {
-    if (!isExtensionContext) return;
-
     try {
-      const content = await browser.runtime.sendMessage({
-        action: 'GET_EMAIL_CONTENT',
-        messageId: currentMessageId,
-      });
-      setEmailContent(content.body);
+      const messageComposeTab = await getMessageComposeTab();
+      const emptyMessage = 'Тестовое содержимое письма не обнаружено';
+
+      if (messageComposeTab) {
+        const currentCompose = await browser.compose.getComposeDetails(messageComposeTab.id);
+
+        setEditedContent(currentCompose.plainTextBody ?? emptyMessage);
+      } else {
+        const currentEmail = await browser.messageDisplay.getDisplayedMessage();
+        const emailId = currentEmail.id;
+        if (!emailId) return;
+
+        const fullMessage = await browser.messages.getFull(emailId);
+        const content: string = fullMessage?.parts?.[0]?.body ?? emptyMessage;
+
+        setEditedContent(content);
+      }
     } catch (error) {
-      console.error('Failed to fetch email:', error);
+      console.error('Ошибка получения содержимого письма: ', error);
     }
   };
 
-  const updateEmailContent = async (newContent: string) => {
-    if (!isExtensionContext) return;
-
+  const sendUpdatedContent = async () => {
     try {
-      await browser.runtime.sendMessage({
-        action: 'UPDATE_EMAIL_CONTENT',
-        messageId: currentMessageId,
-        content: newContent,
+      const messageComposeTab = await getMessageComposeTab();
+
+      if (!messageComposeTab) return;
+
+      await browser.compose.setComposeDetails(messageComposeTab.id, {
+        body: editedContent,
       });
-      alert('Изменения сохранены!');
     } catch (error) {
-      console.error('Failed to update email:', error);
-      alert('Ошибка при сохранении!');
+      console.error('Ошибка отправки обновлённого содержимого: ', error);
     }
   };
-
-  if (!isExtensionContext) {
-    return (
-      <div className='warning'>
-        <h3>Это расширение работает только в Thunderbird</h3>
-        <p>Для тестирования в браузере используйте mock-режим</p>
-      </div>
-    );
-  }
 
   return (
-    <div className='email-editor'>
-      <button onClick={fetchEmailContent} disabled={!currentMessageId}>
-        Загрузить письмо
+    <div style={generalContainer}>
+      <h1>DID Почтовый плагин</h1>
+      <button onClick={fetchEmailContent}>Извлечь содержимое письма</button>
+      <div style={{ marginTop: '20px' }}>
+        <textarea
+          rows={10}
+          cols={50}
+          value={editedContent}
+          onChange={(e) => setEditedContent(e.target.value)}
+          placeholder='Редактируйте содержимое письма...'
+        />
+      </div>
+      <button onClick={sendUpdatedContent} style={{ marginTop: '20px' }}>
+        Обновить письмо
       </button>
-      <textarea
-        value={emailContent}
-        onChange={(e) => setEmailContent(e.target.value)}
-        placeholder={!currentMessageId ? 'Сначала выберите письмо' : ''}
-      />
-      <button onClick={() => updateEmailContent(emailContent)} disabled={!emailContent}>
-        Сохранить изменения
+      <button onClick={onOpenPanel} style={{ marginTop: '20px' }}>
+        Открыть тестовую панель
       </button>
-      <button onClick={() => console.log('TEST 12345')}>Тестим рантайм</button>
     </div>
   );
 };

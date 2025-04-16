@@ -7,8 +7,6 @@ const isProduction =
   process.argv.some((arg) => ['-p', '--production'].includes(arg)) ||
   process.env.NODE_ENV === 'production';
 
-console.log(isProduction);
-
 const copyPluginConfig = [
   {
     from: 'public/manifest.json',
@@ -18,12 +16,15 @@ const copyPluginConfig = [
     from: 'public/icons',
     to: 'icons',
   },
+  {
+    from: 'public/sidebar.html',
+    to: 'sidebar.html',
+  },
 ];
 
 let entryConfig = {
   plugin: './src/index.tsx',
-  background: './src/background/service-worker.ts',
-  content: './src/content/content-script.ts',
+  background: './src/background.js',
 };
 
 if (!isProduction) {
